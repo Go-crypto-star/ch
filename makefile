@@ -1,50 +1,62 @@
+# Makefile для сборки pool-reference
+
 CC = gcc
 CXX = g++
 GO = go
+ASM = nasm
+
 CFLAGS = -O3 -march=native -fPIC -Wall -Wextra
 CXXFLAGS = -O3 -march=native -fPIC -std=c++17 -Wall -Wextra
-LDFLAGS = -ljsoncpp -lm -lpthread
+ASMFLAGS = -f elf64
+GOTAGS = -tags=performance
 
-# Цели сборки
-TARGET = libpool.so
-GO_TARGET = pool.a
+INCLUDE_DIR = include
+SRC_DIR = src
+ASM_DIR = asm
+GO_DIR = go
+BUILD_DIR = build
 
-# Исходные файлы
-C_SOURCES = pool_math.c hash_utils.c
-CXX_SOURCES = pool_manager.cpp state_manager.cpp
-ASM_SOURCES = math_ops.asm
-GO_SOURCES = config_loader.go crypto_utils.go
+C_SOURCES = $(wildcard $(SRC_DIR)/*.c)
+CXX_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
+ASM_SOURCES = $(wildcard $(ASM_DIR)/*.asm)
+GO_SOURCES = $(wildcard $(GO_DIR)/*.go)
 
-# Объектные файлы
-C_OBJS = $(C_SOURCES:.c=.o)
-CXX_OBJS = $(CXX_SOURCES:.cpp=.o)
-ASM_OBJS = $(ASM_SOURCES:.asm=.o)
-GO_OBJS = $(GO_SOURCES:.go=.o)
+C_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(CXX_SOURCES))
+ASM_OBJS = $(patsubst $(ASM_DIR)/%.asm,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
+
+TARGET = $(BUILD_DIR)/libpool.so
+GO_TARGET = $(BUILD_DIR)/pool.a
 
 all: $(TARGET) $(GO_TARGET)
 
-# Сборка основной C++ библиотеки
 $(TARGET): $(C_OBJS) $(CXX_OBJS) $(ASM_OBJS)
-	$(CXX) -shared -o $@ $^ $(LDFLAGS)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) -shared -o $@ $^ -lm
 
-# Сборка Go пакета
 $(GO_TARGET): $(GO_SOURCES)
-	$(GO) build -buildmode=c-archive -o $@ ./...
+	@mkdir -p $(BUILD_DIR)
+	cd $(GO_DIR) && $(GO) build $(GOTAGS) -buildmode=c-archive -o ../$@ .
 
-# Компиляция C файлов
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-# Компиляция C++ файлов  
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-# Компиляция ассемблера
-%.o: %.asm
-	nasm -f elf64 $< -o $@
+$(BUILD_DIR)/%.o: $(ASM_DIR)/%.asm
+	@mkdir -p $(BUILD_DIR)
+	$(ASM) $(ASMFLAGS) $< -o $@
 
-# Очистка
 clean:
-	rm -f *.o $(TARGET) $(GO_TARGET)
+	rm -rf $(BUILD_DIR)
 
-.PHONY: all clean
+test: all
+	cd tests && $(GO) test -v
+
+benchmark: all
+	cd tests && $(GO) test -bench=. -benchmem
+
+.PHONY: all clean test benchmark
