@@ -1,6 +1,7 @@
 #ifndef PROOF_VERIFICATION_H
 #define PROOF_VERIFICATION_H
 
+#include <cstddef>
 #include <stdint.h>
 #include <stdbool.h>
 
