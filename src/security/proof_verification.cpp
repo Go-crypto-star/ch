@@ -1,5 +1,5 @@
 #include "security/proof_verification.h"
-#include "../math_operations.h"
+#include "math_operations.h"
 
 #include <stdio.h>
 #include <string.h>
