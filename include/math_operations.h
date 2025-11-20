@@ -2,6 +2,7 @@
 #define MATH_OPERATIONS_H
 
 #include <stdint.h>
+#include <cstddef>
 #include <stdbool.h>
 
 // Параметры расчета сложности
