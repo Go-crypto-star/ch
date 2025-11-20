@@ -12,11 +12,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fPIC")
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(OPENSSL REQUIRED openssl)
+pkg_check_modules(GMP REQUIRED gmp)
 
 # Включаемые директории
 include_directories(include)
 include_directories(${CURL_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIRS})
+include_directories(${GMP_INCLUDE_DIRS})
 
 # Источники
 file(GLOB C_SOURCES 
@@ -38,8 +40,8 @@ add_library(pool SHARED ${C_SOURCES} ${CPP_SOURCES})
 add_library(pool_static STATIC ${C_SOURCES} ${CPP_SOURCES})
 
 # Зависимости
-target_link_libraries(pool ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES} pthread m)
-target_link_libraries(pool_static ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES} pthread m)
+target_link_libraries(pool ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES} ${GMP_LIBRARIES} pthread m)
+target_link_libraries(pool_static ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES} ${GMP_LIBRARIES} pthread m)
 
 # Установка
 install(TARGETS pool pool_static
@@ -52,6 +54,12 @@ install(DIRECTORY include/
     FILES_MATCHING PATTERN "*.h"
 )
 
+# Тесты
+if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 # Go компоненты
 if(EXISTS "${CMAKE_SOURCE_DIR}/go")
     add_custom_target(go_build
@@ -59,10 +67,4 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/go")
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Building Go components"
     )
-endif()
-
-# Тесты
-enable_testing()
-if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
-    add_subdirectory(tests)
 endif()
