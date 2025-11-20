@@ -1,0 +1,114 @@
+{
+  "pool": {
+    "name": "Chia Reference Pool",
+    "url": "https://pool.example.com",
+    "version": "1.0.0",
+    "description": "High-performance Chia pooling protocol implementation"
+  },
+  "network": {
+    "port": 8444,
+    "host": "0.0.0.0",
+    "max_connections": 10000,
+    "timeout_seconds": 30,
+    "ssl_enabled": true,
+    "ssl_cert_path": "/etc/pool/ssl/cert.pem",
+    "ssl_key_path": "/etc/pool/ssl/key.pem"
+  },
+  "fees": {
+    "pool_fee_percentage": 1.0,
+    "minimum_fee": 0.1,
+    "maximum_fee": 5.0,
+    "fee_address": "xch1q2w3e4r5t6y7u8i9o0p1a2s3d4f5g6h7j8k9l0m1n2o3p4q5r6s7t8u9v0w"
+  },
+  "payouts": {
+    "minimum_payout_mojos": 1000000000,
+    "payout_interval_hours": 24,
+    "payout_strategy": "pplns",
+    "pplns_window_size": 1000000,
+    "max_payouts_per_transaction": 50,
+    "transaction_fee_mojos": 1000000
+  },
+  "difficulty": {
+    "target_partials_per_day": 300,
+    "minimum_difficulty": 1,
+    "maximum_difficulty": 1000000,
+    "adjustment_interval_minutes": 60,
+    "adjustment_factor": 0.2
+  },
+  "blockchain": {
+    "chia_rpc_host": "localhost",
+    "chia_rpc_port": 8555,
+    "chia_rpc_cert_path": "/root/.chia/mainnet/config/ssl/full_node/private_full_node.crt",
+    "chia_rpc_key_path": "/root/.chia/mainnet/config/ssl/full_node/private_full_node.key",
+    "network_overrides": {
+      "mainnet": {
+        "address_prefix": "xch",
+        "genesis_challenge": "ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb"
+      },
+      "testnet7": {
+        "address_prefix": "txch",
+        "genesis_challenge": "ae83525ba8d1dd3f09b277de18ca3e43fc0af20d20c4b3e92ef2a48bd291ccb2"
+      }
+    },
+    "start_height": 0,
+    "confirmations_required": 32
+  },
+  "partials": {
+    "deadline_seconds": 28,
+    "max_queue_size": 10000,
+    "verification_timeout_ms": 5000,
+    "duplicate_window_minutes": 10
+  },
+  "logging": {
+    "level": "info",
+    "file_path": "/var/log/chiapool/pool.log",
+    "max_size_mb": 100,
+    "max_backups": 10,
+    "max_age_days": 30,
+    "enable_console": true,
+    "enable_file": true
+  },
+  "security": {
+    "rate_limiting": {
+      "requests_per_minute": 60,
+      "partials_per_minute": 10,
+      "burst_size": 5
+    },
+    "authentication": {
+      "session_timeout_minutes": 60,
+      "token_expiry_hours": 24,
+      "require_ssl": true
+    },
+    "allowed_origins": [
+      "https://pool.example.com",
+      "https://farmer.example.com"
+    ]
+  },
+  "optimizations": {
+    "enable_proof_cache": true,
+    "enable_signature_cache": true,
+    "enable_vectorization": true,
+    "max_cache_memory_mb": 512,
+    "cache_ttl_seconds": 300,
+    "batch_verification_size": 8
+  },
+  "monitoring": {
+    "enable_metrics": true,
+    "metrics_port": 9090,
+    "enable_health_checks": true,
+    "stats_update_interval_seconds": 30
+  },
+  "database": {
+    "type": "sqlite",
+    "path": "/var/lib/chiapool/pool.db",
+    "connection_string": "",
+    "max_connections": 100,
+    "max_idle_connections": 10
+  },
+  "backup": {
+    "enabled": true,
+    "interval_hours": 24,
+    "retention_days": 30,
+    "path": "/var/backups/chiapool"
+  }
+}
