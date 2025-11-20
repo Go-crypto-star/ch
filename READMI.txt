@@ -1,28 +1,50 @@
 pool-reference-cpp/
 ├── include/                         # Заголовочные файлы C/C++
-│   ├── pool_core.h                 # Основные типы и функции пула
-│   ├── math_operations.h           # Математические операции
-│   ├── security.h                  # Функции безопасности
-│   ├── optimizations.h             # Оптимизации производительности
-│   └── go_bridge.h                 # Go-интерфейсы
+│   ├── pool_core.h                 # Основные типы, структуры данных, контекст пула
+│   ├── protocol/                   # Внутренние протоколы и состояния
+│   │   ├── singleton.h             # Управление синглтонами (Plot NFT)
+│   │   └── partials.h              # Верификация частичных решений (Partials)
+│   ├── blockchain/                 # Взаимодействие с блокчейном
+│   │   ├── chia_operations.h       # Сбор вознаграждений, проверка точек сигнейджа
+│   │   └── smart_coin.h            # Исполнение условий смарт-контрактов
+│   ├── security/                   # Безопасность
+│   │   ├── auth.h                  # Аутентификация фермеров (BLS-подписи)
+│   │   └── proof_verification.h    # Верификация доказательства пространства
+│   ├── math_operations.h           # Операции для расчета сложности и очков
+│   ├── optimizations.h             # Оптимизации (кеширование, векторизация)
+│   └── go_bridge.h                 # Интерфейсы для Go
 ├── src/                            # Исходный код C/C++
-│   ├── pool_core.cpp               # Основная логика пула
+│   ├── pool_core.cpp               # Основная логика пула (инициализация, главный цикл)
+│   ├── protocol/
+│   │   ├── singleton.cpp           # Логика работы с синглтонами
+│   │   └── partials.cpp            # Очередь и валидация частичных решений
+│   ├── blockchain/
+│   │   ├── chia_operations.cpp     # Мониторинг блокчейна, создание транзакций
+│   │   └── smart_coin.cpp          # Исполнение майнинговых контрактов
+│   ├── security/
+│   │   ├── auth.cpp                # Проверка подписей сообщений
+│   │   └── proof_verification.cpp  # Верификация PoS согласно спецификации
 │   ├── math_operations.cpp         # Реализация математики
-│   ├── security.cpp                # Проверки безопасности
 │   ├── optimizations.cpp           # Оптимизированные версии
 │   └── go_bridge.cpp               # Мост для Go
-├── asm/                            # Ассемблерные оптимизации
-│   ├── math_ops.asm                # 256-битная арифметика
-│   ├── hash_ops.asm                # Криптографические хеши
-│   └── vector_ops.asm              # Векторные операции
-├── go/                             # Go компоненты
-│   ├── pool_bridge.go              # Основной мост Go-C
-│   ├── crypto_utils.go             # Криптография на Go
+├── asm/                            # Ассемблерные оптимизации для x86-64
+│   ├── sha256_extended.asm         # Оптимизированный SHA-256 для Chia
+│   ├── bls_ops.asm                 # Ускорение операций BLS-подписи
+│   └── vector_ops.asm              # Векторные операции для обработки множества partials
+├── go/                             # Go компоненты (сетевое ядро, API)
+│   ├── pool_bridge.go              # Основной мост Go-C (вызов C-кода)
+│   ├── api/                        # HTTP API сервер
+│   │   ├── server.go               # Эндпоинты (/farmer, /partial, /pool_info)
+│   │   └── middleware.go           # Аутентификация, логирование, rate limiting
+│   ├── core/                       # Логика на Go
+│   │   ├── farmer_manager.go       # Учет фермеров, баланса, сложности
+│   │   ├── payment_processor.go    # Расчет и отправка выплат (PPS, PPLNS)
+│   │   └── difficulty_manager.go   # Алгоритм адаптации сложности
+│   ├── crypto_utils.go             # Криптография на Go (хелпер-функции)
 │   ├── config_loader.go            # Загрузка конфигурации
-│   ├── types.go                    # Go типы данных
+│   ├── types.go                    # Go типы данных (Farmer, Partial, PoolInfo)
 │   └── examples/
-│       ├── simple_pool.go          # Пример использования
-│       └── benchmark_test.go       # Тесты производительности
+│       └── simple_pool.go          # Пример использования
 ├── tests/                          # Тесты и бенчмарки
 │   ├── math_test.cpp               # Тесты математических операций
 │   ├── pool_test.cpp               # Тесты логики пула
@@ -30,8 +52,8 @@ pool-reference-cpp/
 │   ├── performance_benchmark.cpp   # Бенчмарки производительности
 │   └── integration_test.go         # Интеграционные тесты
 ├── config/                         # Конфигурационные файлы
-│   ├── pool_config.json            # Основная конфигурация
-│   ├── tokens.json                 # Конфигурация токенов
+│   ├── pool_config.json            # Основная конфигурация (порт, комиссия, RPC-ноды)
+│   ├── tokens.json                 # Конфигурация токенов (НЕ УДАЛЯТЬ, для будущих выплат в иных токенах)
 │   └── network_config.json         # Сетевые настройки
 ├── scripts/                        # Вспомогательные скрипты
 │   ├── build.sh                    # Скрипт сборки
@@ -54,8 +76,7 @@ pool-reference-cpp/
 ├── examples/                       # Примеры использования
 │   ├── simple_example.c            # Простой пример на C
 │   ├── advanced_example.cpp        # Продвинутый пример на C++
-│   ├── go_example.go               # Пример на Go
-│   └── web3_integration.go         # Интеграция с Web3
+│   └── go_example.go               # Пример на Go
 ├── Makefile                        # Основной Makefile
 ├── CMakeLists.txt                  # CMake конфигурация
 ├── go.mod                          # Go модули
