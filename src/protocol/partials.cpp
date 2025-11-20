@@ -1,5 +1,5 @@
 #include "protocol/partials.h"
-#include "../security/proof_verification.h"
+#include "security/proof_verification.h"
 #include "../security/auth.h"
 #include "../blockchain/chia_operations.h"
 #include "singleton.h"
