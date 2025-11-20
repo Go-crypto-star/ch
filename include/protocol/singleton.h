@@ -1,6 +1,7 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
 
+#include <cstddef>
 #include <stdint.h>
 #include <stdbool.h>
 
