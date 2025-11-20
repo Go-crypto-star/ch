@@ -1,6 +1,7 @@
 #ifndef CHIA_OPERATIONS_H
 #define CHIA_OPERATIONS_H
 
+#include <cstddef>
 #include <stdint.h>
 #include <stdbool.h>
 
