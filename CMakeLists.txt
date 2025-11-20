@@ -54,10 +54,12 @@ install(DIRECTORY include/
     FILES_MATCHING PATTERN "*.h"
 )
 
-# Тесты
-if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
+# Тесты - опционально, если есть GTest
+if(EXISTS "${CMAKE_SOURCE_DIR}/tests" AND GTEST_FOUND)
     enable_testing()
     add_subdirectory(tests)
+else()
+    message(WARNING "GTest not found, skipping tests")
 endif()
 
 # Go компоненты
