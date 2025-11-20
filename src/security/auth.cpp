@@ -1,5 +1,5 @@
 #include "security/auth.h"
-#include "../protocol/singleton.h"
+#include "protocol/singleton.h"
 
 #include <stdio.h>
 #include <string.h>
