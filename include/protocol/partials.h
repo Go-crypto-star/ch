@@ -1,6 +1,7 @@
 #ifndef PARTIALS_H
 #define PARTIALS_H
 
+#include <cstddef>
 #include <stdint.h>
 #include <stdbool.h>
 
