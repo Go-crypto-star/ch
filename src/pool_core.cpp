@@ -29,6 +29,40 @@ void pool_log(const char* level, const char* message) {
     fflush(stdout);
 }
 
+// Функция для основного цикла пула
+static void* pool_main_loop(void* arg) {
+    pool_context_t* ctx = (pool_context_t*)arg;
+    
+    pool_log("INFO", "Основной цикл пула запущен");
+    
+    while (!ctx->shutdown_requested && !ctx->emergency_stop) {
+        // Синхронизация с блокчейном
+        if (!chia_sync_to_peak()) {
+            pool_log("ERROR", "Ошибка синхронизации с блокчейном");
+            sleep(10);
+            continue;
+        }
+        
+        // Обновление статистики
+        pool_log_statistics();
+        
+        // Проверка состояния
+        pthread_mutex_lock(&ctx->state_mutex);
+        pool_state_t state = ctx->state;
+        pthread_mutex_unlock(&ctx->state_mutex);
+        
+        if (state != POOL_STATE_RUNNING) {
+            pool_log("WARNING", "Пул перешел в состояние остановки");
+            break;
+        }
+        
+        sleep(30); // Цикл каждые 30 секунд
+    }
+    
+    pool_log("INFO", "Основной цикл пула завершен");
+    return NULL;
+}
+
 bool pool_init(const pool_config_t* config) {
     pool_log("INFO", "Инициализация пула...");
     
@@ -41,6 +75,9 @@ bool pool_init(const pool_config_t* config) {
         pool_log("ERROR", "Невалидная конфигурация пула");
         return false;
     }
+    
+    // Объявление переменной в начале функции
+    optimizations_config_t optim_config;
     
     memset(&g_pool_context, 0, sizeof(pool_context_t));
     g_pool_context.state = POOL_STATE_INIT;
@@ -92,14 +129,13 @@ bool pool_init(const pool_config_t* config) {
         goto cleanup;
     }
     
-    optimizations_config_t optim_config = {
-        .enable_proof_cache = true,
-        .enable_signature_cache = true,
-        .enable_vectorization = true,
-        .enable_asm_optimizations = true,
-        .max_cache_memory = 1024 * 1024 * 100, // 100 MB
-        .cache_ttl_seconds = 300
-    };
+    // Инициализация структуры optim_config
+    optim_config.enable_proof_cache = true;
+    optim_config.enable_signature_cache = true;
+    optim_config.enable_vectorization = true;
+    optim_config.enable_asm_optimizations = true;
+    optim_config.max_cache_memory = 1024 * 1024 * 100; // 100 MB
+    optim_config.cache_ttl_seconds = 300;
     
     if (!optimizations_init(&optim_config)) {
         pool_log("WARNING", "Не удалось инициализировать оптимизации, продолжаем без них");
@@ -136,38 +172,7 @@ bool pool_start(void) {
     
     // Запуск основного цикла в отдельном потоке
     if (pthread_create(&g_pool_context.main_thread, NULL, 
-                      [](void* arg) -> void* {
-                          pool_context_t* ctx = (pool_context_t*)arg;
-                          
-                          pool_log("INFO", "Основной цикл пула запущен");
-                          
-                          while (!ctx->shutdown_requested && !ctx->emergency_stop) {
-                              // Синхронизация с блокчейном
-                              if (!chia_sync_to_peak()) {
-                                  pool_log("ERROR", "Ошибка синхронизации с блокчейном");
-                                  sleep(10);
-                                  continue;
-                              }
-                              
-                              // Обновление статистики
-                              pool_log_statistics();
-                              
-                              // Проверка состояния
-                              pthread_mutex_lock(&ctx->state_mutex);
-                              pool_state_t state = ctx->state;
-                              pthread_mutex_unlock(&ctx->state_mutex);
-                              
-                              if (state != POOL_STATE_RUNNING) {
-                                  pool_log("WARNING", "Пул перешел в состояние остановки");
-                                  break;
-                              }
-                              
-                              sleep(30); // Цикл каждые 30 секунд
-                          }
-                          
-                          pool_log("INFO", "Основной цикл пула завершен");
-                          return NULL;
-                      }, &g_pool_context) != 0) {
+                      pool_main_loop, &g_pool_context) != 0) {
         pool_set_error("Не удалось создать основной поток");
         return false;
     }
@@ -267,7 +272,8 @@ bool pool_validate_config(const pool_config_t* config) {
         return false;
     }
     
-    if (config->port == 0 || config->port > 65535) {
+    // Исправлено: убрана проверка > 65535, так как config->port уже uint16_t
+    if (config->port == 0) {
         pool_set_error("Невалидный порт");
         return false;
     }
