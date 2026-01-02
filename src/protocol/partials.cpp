@@ -1,8 +1,9 @@
 #include "protocol/partials.h"
 #include "security/proof_verification.h"
-#include "../security/auth.h"
-#include "../blockchain/chia_operations.h"
-#include "singleton.h"
+#include "security/auth.h"
+#include "blockchain/chia_operations.h"
+#include "protocol/singleton.h"
+#include <pthread.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -149,7 +150,7 @@ void partial_queue_cleanup(partial_queue_t* queue) {
 partial_validation_result_t partial_validate(const partial_t* partial) {
     if (!partial) {
         partials_log("ERROR", "Partial решение не может быть NULL");
-        return PARTIAL_INTERNAL_ERROR;
+        return VALIDATION_INTERNAL_ERROR;
     }
     
     g_total_partials++;
@@ -159,7 +160,7 @@ partial_validation_result_t partial_validate(const partial_t* partial) {
     if (current_time - partial->timestamp > 28) { // 28 секунд дедлайн
         partials_log("WARNING", "Partial решение получено слишком поздно");
         g_invalid_partials++;
-        return PARTIAL_TOO_LATE;
+        return VALIDATION_TOO_LATE;
     }
     
     // Проверка синглтона
@@ -167,34 +168,34 @@ partial_validation_result_t partial_validate(const partial_t* partial) {
     if (!singleton_init(partial->launcher_id, &farmer_singleton)) {
         partials_log("ERROR", "Не удалось инициализировать синглтон фермера");
         g_invalid_partials++;
-        return PARTIAL_INVALID_SINGLETON;
+        return VALIDATION_INVALID_SINGLETON;
     }
     
     if (!singleton_verify_pool_membership(&farmer_singleton)) {
         partials_log("WARNING", "Синглтон не является членом пула");
         g_invalid_partials++;
-        return PARTIAL_INVALID_SINGLETON;
+        return VALIDATION_INVALID_SINGLETON;
     }
     
     // Проверка подписи
     if (!partial_verify_signature(partial)) {
         partials_log("ERROR", "Невалидная подпись partial решения");
         g_invalid_partials++;
-        return PARTIAL_INVALID_SIGNATURE;
+        return VALIDATION_INVALID_SIGNATURE;
     }
     
     // Проверка доказательства пространства
     if (!partial_verify_proof(partial)) {
         partials_log("ERROR", "Невалидное доказательство пространства");
         g_invalid_partials++;
-        return PARTIAL_INVALID_PROOF;
+        return VALIDATION_INVALID_PROOF;
     }
     
     // Проверка вызова (challenge)
     if (!partial_verify_challenge(partial->challenge)) {
         partials_log("ERROR", "Невалидный вызов partial решения");
         g_invalid_partials++;
-        return PARTIAL_INVALID_CHALLENGE;
+        return VALIDATION_INVALID_CHALLENGE;
     }
     
     g_valid_partials++;
@@ -210,7 +211,7 @@ partial_validation_result_t partial_validate(const partial_t* partial) {
              launcher_id_hex, partial->difficulty, partial->points);
     partials_log("INFO", log_msg);
     
-    return PARTIAL_VALID;
+    return VALIDATION_SUCCESS;
 }
 
 bool partial_verify_proof(const partial_t* partial) {
@@ -306,7 +307,7 @@ bool partial_process(const partial_t* partial) {
     // Логируем результат валидации
     partial_log_validation_result(result, partial->launcher_id);
     
-    if (result != PARTIAL_VALID) {
+    if (result != VALIDATION_SUCCESS) {
         return false;
     }
     
@@ -331,14 +332,17 @@ void partial_log_validation_result(partial_validation_result_t result, const uin
     const char* result_str = "UNKNOWN";
     
     switch (result) {
-        case PARTIAL_VALID: result_str = "VALID"; break;
-        case PARTIAL_INVALID_SIGNATURE: result_str = "INVALID_SIGNATURE"; break;
-        case PARTIAL_INVALID_PROOF: result_str = "INVALID_PROOF"; break;
-        case PARTIAL_INVALID_CHALLENGE: result_str = "INVALID_CHALLENGE"; break;
-        case PARTIAL_INVALID_SINGLETON: result_str = "INVALID_SINGLETON"; break;
-        case PARTIAL_TOO_LATE: result_str = "TOO_LATE"; break;
-        case PARTIAL_DUPLICATE: result_str = "DUPLICATE"; break;
-        case PARTIAL_INTERNAL_ERROR: result_str = "INTERNAL_ERROR"; break;
+        case VALIDATION_SUCCESS: result_str = "VALID"; break;
+        case VALIDATION_INVALID_SIGNATURE: result_str = "INVALID_SIGNATURE"; break;
+        case VALIDATION_INVALID_PROOF: result_str = "INVALID_PROOF"; break;
+        case VALIDATION_INVALID_CHALLENGE: result_str = "INVALID_CHALLENGE"; break;
+        case VALIDATION_INVALID_SINGLETON: result_str = "INVALID_SINGLETON"; break;
+        case VALIDATION_TOO_LATE: result_str = "TOO_LATE"; break;
+        case VALIDATION_DUPLICATE: result_str = "DUPLICATE"; break;
+        case VALIDATION_INTERNAL_ERROR: result_str = "INTERNAL_ERROR"; break;
+        case VALIDATION_EXPIRED: result_str = "EXPIRED"; break;
+        case VALIDATION_INVALID_DIFFICULTY: result_str = "INVALID_DIFFICULTY"; break;
+        case VALIDATION_RATE_LIMITED: result_str = "RATE_LIMITED"; break;
     }
     
     char launcher_id_hex[65] = {0};
@@ -353,7 +357,7 @@ void partial_log_validation_result(partial_validation_result_t result, const uin
              "Результат валидации partial: %s, фермер=%s", 
              result_str, launcher_id_hex);
     
-    if (result == PARTIAL_VALID) {
+    if (result == VALIDATION_SUCCESS) {
         partials_log("INFO", log_msg);
     } else {
         partials_log("WARNING", log_msg);
