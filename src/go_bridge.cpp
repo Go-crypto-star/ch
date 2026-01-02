@@ -174,7 +174,7 @@ bool go_bridge_process_partial(const PartialRequest* partial) {
     partial_data.difficulty = partial->difficulty;
     
     // Обрабатываем partial решение
-    if (!partial_process(&partial_data)) {
+    if (!partials_process(&partial_data)) {
         go_bridge_log("ERROR", "Не удалось обработать partial решение");
         return false;
     }
