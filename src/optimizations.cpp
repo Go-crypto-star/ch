@@ -1,7 +1,7 @@
 #include "optimizations.h"
-#include "../security/proof_verification.h"
-#include "../security/auth.h"
-#include "../protocol/partials.h"
+#include "security/proof_verification.h"
+#include "security/auth.h"
+#include "protocol/partials.h"
 
 #include <stdio.h>
 #include <string.h>
