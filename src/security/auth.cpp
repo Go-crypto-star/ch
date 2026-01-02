@@ -7,6 +7,7 @@
 #include <time.h>
 #include <map>
 #include <string>
+#include <pthread.h>
 
 static bls_key_t g_pool_private_key;
 static std::map<std::string, auth_session_t*> g_sessions;
