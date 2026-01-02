@@ -1,6 +1,6 @@
 #include "protocol/singleton.h"
 #include "blockchain/chia_operations.h"
-#include "../security/auth.h"
+#include "../../include/security/auth.h"
 
 #include <stdio.h>
 #include <string.h>
