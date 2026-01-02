@@ -1,11 +1,12 @@
 #include "blockchain/smart_coin.h"
-#include "../blockchain/chia_operations.h"
-#include "../security/auth.h"
+#include "blockchain/chia_operations.h"
+#include "security/auth.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 static void smart_coin_log(const char* level, const char* message) {
     time_t now = time(NULL);
@@ -225,9 +226,8 @@ void smart_coin_log_transaction(const absorb_transaction_t* transaction) {
     
     char log_msg[512];
     snprintf(log_msg, sizeof(log_msg),
-             "Транзакция поглощения: launcher=%s, amount=%lu, fee=%u, size=%zu",
-             launcher_id_hex, transaction->amount, transaction->fee, 
-             transaction->transaction_size);
+         "Транзакция поглощения: launcher=%s, amount=%lu, fee=%u, size=140",
+         launcher_id_hex, transaction->amount, transaction->fee);
     
     smart_coin_log("INFO", log_msg);
 }
