@@ -174,10 +174,11 @@ void* cache_get(cache_type_t type, const uint8_t* key, size_t key_len) {
     uint64_t current_time = time(NULL);
     if (current_time - entry->timestamp > g_optim_config.cache_ttl_seconds) {
         // Запись устарела, удаляем ее
+        size_t entry_size = entry->size; // Сохраняем размер перед освобождением
         free(entry->data);
         free(entry);
         g_caches[type].erase(it);
-        g_cache_stats[type].memory_used -= entry->size;
+        g_cache_stats[type].memory_used -= entry_size; // Используем сохраненное значение
         g_cache_stats[type].misses++;
         pthread_mutex_unlock(&g_cache_mutex);
         
@@ -208,10 +209,11 @@ bool cache_remove(cache_type_t type, const uint8_t* key, size_t key_len) {
     
     if (it != g_caches[type].end()) {
         cache_entry_t* entry = it->second;
+        size_t entry_size = entry->size; // Сохраняем размер перед освобождением
         free(entry->data);
         free(entry);
         g_caches[type].erase(it);
-        g_cache_stats[type].memory_used -= entry->size;
+        g_cache_stats[type].memory_used -= entry_size; // Используем сохраненное значение
         
         pthread_mutex_unlock(&g_cache_mutex);
         
@@ -316,7 +318,7 @@ bool optimizations_precompute_difficulty_params(void) {
 
 cache_stats_t cache_get_stats(cache_type_t type) {
     if (type < 0 || type > 3) {
-        cache_stats_t empty = {0};
+        cache_stats_t empty = {0, 0, 0, 0, 0}; // Явная инициализация всех полей
         return empty;
     }
     
